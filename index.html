@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="待办">
+  <meta name="theme-color" content="#6750A4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1C1B1F" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <title>待办 · Todo</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部栏 -->
+    <header class="app-header">
+      <div class="header-content">
+        <h1 id="pageTitle">所有任务</h1>
+        <div class="header-actions">
+          <button class="icon-btn" id="themeToggleBtn" aria-label="切换主题">
+            <svg class="icon-sun" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="icon-moon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button class="icon-btn" id="searchBtn" aria-label="搜索">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </div>
+      </div>
+      <!-- 进度条 -->
+      <div class="progress-bar-container">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+        <span class="progress-text" id="progressText">今日 0/0</span>
+      </div>
+      <!-- 搜索框 -->
+      <div class="search-box hidden" id="searchBox">
+        <input type="text" id="searchInput" placeholder="搜索任务..." autocomplete="off">
+        <button class="icon-btn" id="clearSearchBtn" aria-label="清除">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="app-main" id="mainContent">
+      <!-- 任务视图 -->
+      <section class="view view-tasks active" id="viewTasks">
+        <div class="task-list" id="taskList"></div>
+        <div class="empty-state hidden" id="emptyState">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <p>暂无任务</p>
+          <p class="empty-sub">点击右下角 + 添加任务</p>
+        </div>
+      </section>
+
+      <!-- 日历视图 -->
+      <section class="view view-calendar" id="viewCalendar">
+        <div class="calendar-header">
+          <button class="icon-btn" id="prevMonth" aria-label="上个月">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="calendar-title" id="calendarTitle">2026年7月</span>
+          <button class="icon-btn" id="nextMonth" aria-label="下个月">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="calendar-weekdays">
+          <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="calendar-day-tasks" id="calendarDayTasks">
+          <p class="calendar-day-title" id="calendarDayTitle">选择日期查看任务</p>
+          <div class="task-list" id="calendarTaskList"></div>
+        </div>
+      </section>
+
+      <!-- 统计视图 -->
+      <section class="view view-stats" id="viewStats">
+        <div class="stats-container">
+          <!-- 概览卡片 -->
+          <div class="stats-overview">
+            <div class="stat-card">
+              <span class="stat-value" id="statTotal">0</span>
+              <span class="stat-label">总任务</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="statDone">0</span>
+              <span class="stat-label">已完成</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="statPending">0</span>
+              <span class="stat-label">待完成</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="statRate">0%</span>
+              <span class="stat-label">完成率</span>
+            </div>
+          </div>
+
+          <!-- 本周柱状图 -->
+          <div class="chart-card">
+            <h3>本周完成率</h3>
+            <canvas id="weekChart" width="320" height="180"></canvas>
+          </div>
+
+          <!-- 分类饼图 -->
+          <div class="chart-card">
+            <h3>任务分布</h3>
+            <canvas id="pieChart" width="320" height="220"></canvas>
+            <div class="pie-legend" id="pieLegend"></div>
+          </div>
+
+          <!-- 年度热力图 -->
+          <div class="chart-card">
+            <h3>年度活跃</h3>
+            <div class="heatmap-container" id="heatmapContainer"></div>
+            <div class="heatmap-legend">
+              <span>少</span>
+              <div class="heatmap-cells">
+                <div class="heatmap-cell level-0"></div>
+                <div class="heatmap-cell level-1"></div>
+                <div class="heatmap-cell level-2"></div>
+                <div class="heatmap-cell level-3"></div>
+                <div class="heatmap-cell level-4"></div>
+              </div>
+              <span>多</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 设置视图 -->
+      <section class="view view-settings" id="viewSettings">
+        <div class="settings-container">
+          <div class="settings-group">
+            <div class="settings-group-title">外观</div>
+            <div class="settings-item" id="settingTheme">
+              <span>主题模式</span>
+              <div class="segmented-control">
+                <button data-theme="auto" class="active">跟随系统</button>
+                <button data-theme="light">浅色</button>
+                <button data-theme="dark">深色</button>
+              </div>
+            </div>
+            <div class="settings-item" id="settingAccent">
+              <span>主题色</span>
+              <div class="color-picker">
+                <button class="color-dot active" data-accent="#6750A4" style="background:#6750A4"></button>
+                <button class="color-dot" data-accent="#006495" style="background:#006495"></button>
+                <button class="color-dot" data-accent="#006A6A" style="background:#006A6A"></button>
+                <button class="color-dot" data-accent="#BC4D00" style="background:#BC4D00"></button>
+                <button class="color-dot" data-accent="#9C4146" style="background:#9C4146"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">通知</div>
+            <div class="settings-item">
+              <span>任务提醒</span>
+              <label class="switch">
+                <input type="checkbox" id="notifToggle">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">数据</div>
+            <button class="settings-item settings-action" id="exportData">
+              <span>导出数据</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button class="settings-item settings-action" id="importData">
+              <span>导入数据</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </button>
+            <button class="settings-item settings-action danger" id="clearData">
+              <span>清空所有数据</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">关于</div>
+            <div class="settings-item">
+              <span>版本</span>
+              <span class="settings-value">v1.0.0</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 浮动添加按钮 -->
+    <button class="fab" id="fabAdd" aria-label="添加任务">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-view="tasks">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span>任务</span>
+      </button>
+      <button class="nav-item" data-view="calendar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>日历</span>
+      </button>
+      <button class="nav-item" data-view="stats">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>统计</span>
+      </button>
+      <button class="nav-item" data-view="settings">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>设置</span>
+      </button>
+    </nav>
+
+    <!-- 任务编辑弹窗 -->
+    <div class="modal-overlay hidden" id="taskModal">
+      <div class="modal">
+        <div class="modal-header">
+          <button class="modal-btn cancel" id="modalCancel">取消</button>
+          <h2 id="modalTitle">新建任务</h2>
+          <button class="modal-btn save" id="modalSave">保存</button>
+        </div>
+        <div class="modal-body">
+          <input type="text" class="modal-input" id="taskTitle" placeholder="任务标题" maxlength="200">
+          <textarea class="modal-textarea" id="taskDesc" placeholder="备注（可选）" rows="2"></textarea>
+
+          <div class="modal-field">
+            <label>截止日期</label>
+            <div class="date-row">
+              <input type="date" id="taskDueDate">
+              <input type="time" id="taskDueTime">
+              <button class="chip" id="clearDate">清除</button>
+            </div>
+          </div>
+
+          <div class="modal-field">
+            <label>优先级</label>
+            <div class="segmented-control">
+              <button data-priority="0" class="active">低</button>
+              <button data-priority="1">中</button>
+              <button data-priority="2">高</button>
+            </div>
+          </div>
+
+          <div class="modal-field">
+            <label>标签</label>
+            <div class="tag-selector" id="tagSelector"></div>
+            <div class="tag-input-row">
+              <input type="text" id="newTagInput" placeholder="新标签名..." maxlength="20">
+              <button class="chip" id="addTagBtn">添加</button>
+            </div>
+          </div>
+
+          <div class="modal-field">
+            <label>子任务</label>
+            <div class="subtasks" id="subtaskList"></div>
+            <div class="subtask-input-row">
+              <input type="text" id="newSubtaskInput" placeholder="添加子任务..." maxlength="200">
+              <button class="chip" id="addSubtaskBtn">添加</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast hidden" id="toast"></div>
+  </div>
+
+  <!-- 隐藏的文件输入 -->
+  <input type="file" id="importFileInput" accept=".json" style="display:none">
+
+  <script src="js/db.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
