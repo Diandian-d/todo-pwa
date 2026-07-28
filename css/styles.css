@@ -303,6 +303,7 @@ html[data-theme="dark"] .icon-moon { display: none; }
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 80px);
+  touch-action: pan-y;
 }
 
 /* Views */
@@ -321,11 +322,74 @@ html[data-theme="dark"] .icon-moon { display: none; }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== Filter Tabs ===== */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.filter-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-tab {
+  background: var(--md-surface-variant);
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-tab.active {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.filter-tab:active {
+  transform: scale(0.95);
+}
+
 /* ===== Task List ===== */
 .task-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Swipe-to-delete wrapper */
+.task-swipe-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+
+.task-swipe-delete {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: var(--md-error);
+  color: white;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  z-index: 1;
 }
 
 .task-item {
@@ -336,10 +400,11 @@ html[data-theme="dark"] .icon-moon { display: none; }
   align-items: flex-start;
   gap: 12px;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: transform 0.2s ease;
   position: relative;
   overflow: hidden;
   animation: slideIn 0.2s ease;
+  z-index: 2;
 }
 
 @keyframes slideIn {

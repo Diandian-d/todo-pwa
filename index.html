@@ -50,6 +50,14 @@
     <main class="app-main" id="mainContent">
       <!-- 任务视图 -->
       <section class="view view-tasks active" id="viewTasks">
+        <!-- 分类标签栏 -->
+        <div class="filter-tabs" id="filterTabs">
+          <button class="filter-tab active" data-filter="all">全部</button>
+          <button class="filter-tab" data-filter="today">今天</button>
+          <button class="filter-tab" data-filter="week">本周</button>
+          <button class="filter-tab" data-filter="important">重要</button>
+          <button class="filter-tab" data-filter="done">已完成</button>
+        </div>
         <div class="task-list" id="taskList"></div>
         <div class="empty-state hidden" id="emptyState">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>

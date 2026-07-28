@@ -37,7 +37,7 @@ const UI = {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
 
-    const titles = { tasks: '所有任务', calendar: '日历', stats: '统计', settings: '设置' };
+    const titles = { tasks: this.filterLabels[this.currentFilter], calendar: '日历', stats: '统计', settings: '设置' };
     document.getElementById('pageTitle').textContent = titles[view];
 
     const fab = document.getElementById('fabAdd');
@@ -119,6 +119,7 @@ const UI = {
 
     empty.classList.add('hidden');
     list.innerHTML = tasks.map(t => this.taskItemHTML(t)).join('');
+    this.bindSwipeEvents();
   },
 
   taskItemHTML(task) {
@@ -154,7 +155,7 @@ const UI = {
       </span>`;
     }
 
-    return `
+    const taskContent = `
       <div class="task-item ${task.done ? 'done' : ''} ${isOverdue ? 'overdue' : ''}" data-id="${task.id}" data-priority="${task.priority || 0}">
         <div class="task-checkbox ${task.done ? 'checked' : ''}" onclick="UI.toggleTask('${task.id}', event)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -169,10 +170,22 @@ const UI = {
         </div>
       </div>
     `;
+
+    return `
+      <div class="task-swipe-wrapper" data-id="${task.id}">
+        <button class="task-swipe-delete" onclick="UI.deleteTaskById('${task.id}')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          删除
+        </button>
+        ${taskContent}
+      </div>
+    `;
   },
 
   async toggleTask(id, event) {
     if (event) event.stopPropagation();
+    // Close any open swipe first
+    this.closeAllSwipes();
     const task = this.tasks.find(t => t.id === id);
     if (!task) return;
     task.done = !task.done;
@@ -187,6 +200,166 @@ const UI = {
     if (this.currentView === 'calendar') Calendar.render();
     if (this.currentView === 'stats') Stats.render();
     this.showToast(task.done ? '已完成' : '已恢复');
+  },
+
+  // ===== Swipe to Delete =====
+  bindSwipeEvents() {
+    const wrappers = document.querySelectorAll('.task-swipe-wrapper');
+    wrappers.forEach(wrapper => {
+      const item = wrapper.querySelector('.task-item');
+      let startX = 0;
+      let currentX = 0;
+      let isDragging = false;
+      let isOpen = false;
+
+      const start = (x) => {
+        // Close other open swipes
+        UI.closeAllSwipes(wrapper);
+        startX = x;
+        currentX = isOpen ? -80 : 0;
+        isDragging = true;
+        item.style.transition = 'none';
+      };
+
+      const move = (x) => {
+        if (!isDragging) return;
+        let diff = x - startX;
+        let newX = currentX + diff;
+        // Only allow left swipe (negative)
+        if (newX > 0) newX = 0;
+        // Max swipe
+        if (newX < -80) newX = -80;
+        item.style.transform = `translateX(${newX}px)`;
+      };
+
+      const end = (x) => {
+        if (!isDragging) return;
+        isDragging = false;
+        item.style.transition = 'transform 0.2s ease';
+        let diff = x - startX;
+        let finalX = currentX + diff;
+        // If swiped more than halfway, keep open
+        if (finalX < -40) {
+          item.style.transform = 'translateX(-80px)';
+          isOpen = true;
+          wrapper._swipeOpen = true;
+        } else {
+          item.style.transform = 'translateX(0)';
+          isOpen = false;
+          wrapper._swipeOpen = false;
+        }
+      };
+
+      // Touch events
+      item.addEventListener('touchstart', (e) => {
+        start(e.touches[0].clientX);
+      }, { passive: true });
+
+      item.addEventListener('touchmove', (e) => {
+        move(e.touches[0].clientX);
+      }, { passive: true });
+
+      item.addEventListener('touchend', (e) => {
+        end(e.changedTouches[0].clientX);
+      }, { passive: true });
+    });
+  },
+
+  closeAllSwipes(except) {
+    document.querySelectorAll('.task-swipe-wrapper').forEach(w => {
+      if (w === except) return;
+      const item = w.querySelector('.task-item');
+      if (item) {
+        item.style.transition = 'transform 0.2s ease';
+        item.style.transform = 'translateX(0)';
+      }
+      w._swipeOpen = false;
+    });
+  },
+
+  async deleteTaskById(id) {
+    if (!confirm('确定删除这个任务吗？')) return;
+    await deleteTask(id);
+    await this.refresh();
+    this.updateProgress();
+    this.showToast('已删除');
+  },
+
+  // ===== Filter Tabs (Right-swipe to switch categories) =====
+  filters: ['all', 'today', 'week', 'important', 'done'],
+  filterLabels: { all: '全部', today: '今天', week: '本周', important: '重要', done: '已完成' },
+
+  switchFilter(filter) {
+    this.currentFilter = filter;
+    // Update tab UI
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.filter === filter);
+    });
+    // Update title
+    if (this.currentView === 'tasks') {
+      document.getElementById('pageTitle').textContent = this.filterLabels[filter];
+    }
+    this.renderTasks();
+  },
+
+  bindFilterSwipe() {
+    const taskView = document.getElementById('viewTasks');
+    let startX = 0;
+    let startY = 0;
+    let isHorizontal = false;
+    let isTracking = false;
+
+    taskView.addEventListener('touchstart', (e) => {
+      // Only track swipes on the view background, not on task items
+      const target = e.target.closest('.task-swipe-wrapper, .filter-tab, .task-item, .icon-btn, .fab');
+      if (target) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      isTracking = true;
+      isHorizontal = false;
+    }, { passive: true });
+
+    taskView.addEventListener('touchmove', (e) => {
+      if (!isTracking) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (!isHorizontal) {
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 20) {
+          isHorizontal = true;
+        } else if (Math.abs(dy) > 20) {
+          isTracking = false;
+        }
+      }
+    }, { passive: true });
+
+    taskView.addEventListener('touchend', (e) => {
+      if (!isTracking || !isHorizontal) {
+        isTracking = false;
+        return;
+      }
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 60) {
+        const currentIdx = this.filters.indexOf(this.currentFilter);
+        let newIdx;
+        if (dx > 0) {
+          // Right swipe: previous filter
+          newIdx = currentIdx - 1;
+          if (newIdx < 0) newIdx = this.filters.length - 1;
+        } else {
+          // Left swipe: next filter
+          newIdx = currentIdx + 1;
+          if (newIdx >= this.filters.length) newIdx = 0;
+        }
+        this.switchFilter(this.filters[newIdx]);
+        this.showToast(this.filterLabels[this.filters[newIdx]]);
+      }
+      isTracking = false;
+    }, { passive: true });
+
+    // Also bind tab clicks
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.onclick = () => this.switchFilter(tab.dataset.filter);
+    });
   },
 
   // ===== Modal =====
@@ -392,6 +565,9 @@ const UI = {
 
     // FAB
     document.getElementById('fabAdd').onclick = () => this.openNewModal();
+
+    // Filter swipe (right-swipe to switch categories)
+    this.bindFilterSwipe();
 
     // Modal
     document.getElementById('modalCancel').onclick = () => this.closeModal();
